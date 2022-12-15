@@ -118,11 +118,17 @@ pub enum ShortcutKey {
     /// the secondary mouse button, usually right click
     #[serde(rename = "mouse_secondary_button")]
     MouseSecondaryButton,
+    /// when the user holds two fingers on the action pad in the overlay
+    #[serde(rename = "action_pad")]
+    ActionPad,
     /// Shift
+    #[serde(rename = "keyboard_shift")]
     KeyboardShift,
     /// Ctrl
+    #[serde(rename = "keyboard_ctrl")]
     KeyboardCtrl,
     /// Alt
+    #[serde(rename = "keyboard_alt")]
     KeyboardAlt,
 }
 

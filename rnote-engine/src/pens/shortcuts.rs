@@ -47,6 +47,13 @@ impl Default for Shortcuts {
                 permanent: false,
             },
         );
+        map.insert(
+            ShortcutKey::ActionPad,
+            ShortcutAction::ChangePenStyle {
+                style: PenStyle::Selector,
+                permanent: false,
+            },
+        );
 
         Self(map)
     }

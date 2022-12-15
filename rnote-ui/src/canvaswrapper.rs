@@ -1,20 +1,19 @@
-use std::cell::Cell;
+use once_cell::sync::Lazy;
+use rnote_compose::penhelpers::ShortcutKey;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use gtk4::{
     gdk, glib, glib::clone, prelude::*, subclass::prelude::*, Button, CompositeTemplate,
     EventControllerScroll, EventControllerScrollFlags, EventSequenceState, GestureDrag,
-    GestureZoom, Inhibit, ProgressBar, PropagationPhase, Revealer, ScrolledWindow, Widget,
+    GestureLongPress, GestureZoom, Inhibit, ProgressBar, PropagationPhase, Revealer,
+    ScrolledWindow, Widget,
 };
 use rnote_engine::Camera;
 
 use crate::{RnoteAppWindow, RnoteCanvas};
 
 mod imp {
-    use std::cell::{Cell, RefCell};
-
-    use once_cell::sync::Lazy;
-
     use super::*;
 
     #[allow(missing_debug_implementations)]
@@ -31,6 +30,7 @@ mod imp {
         pub(crate) canvas_mouse_drag_middle_gesture: GestureDrag,
         pub(crate) canvas_alt_drag_gesture: GestureDrag,
         pub(crate) canvas_alt_shift_drag_gesture: GestureDrag,
+        pub(crate) actionpad_longpress_gesture: GestureLongPress,
 
         #[template_child]
         pub(crate) toast_overlay: TemplateChild<adw::ToastOverlay>,
@@ -44,6 +44,8 @@ mod imp {
         pub(crate) undo_button: TemplateChild<Button>,
         #[template_child]
         pub(crate) redo_button: TemplateChild<Button>,
+        #[template_child]
+        pub(crate) action_pad: TemplateChild<Button>,
         #[template_child]
         pub(crate) scroller: TemplateChild<ScrolledWindow>,
         #[template_child]
@@ -99,6 +101,13 @@ mod imp {
                 .propagation_phase(PropagationPhase::Capture)
                 .build();
 
+            let actionpad_longpress_gesture = GestureLongPress::builder()
+                .n_points(2)
+                .propagation_phase(PropagationPhase::Capture)
+                .touch_only(true)
+                .delay_factor(0.7)
+                .build();
+
             Self {
                 permanently_hide_scrollbars: Cell::new(false),
 
@@ -110,6 +119,7 @@ mod imp {
                 canvas_mouse_drag_middle_gesture,
                 canvas_alt_drag_gesture,
                 canvas_alt_shift_drag_gesture,
+                actionpad_longpress_gesture,
 
                 toast_overlay: TemplateChild::<adw::ToastOverlay>::default(),
                 progressbar: TemplateChild::<ProgressBar>::default(),
@@ -117,6 +127,7 @@ mod imp {
                 fixedsize_quickactions_revealer: TemplateChild::<Revealer>::default(),
                 undo_button: TemplateChild::<Button>::default(),
                 redo_button: TemplateChild::<Button>::default(),
+                action_pad: TemplateChild::<Button>::default(),
                 scroller: TemplateChild::<ScrolledWindow>::default(),
                 canvas: TemplateChild::<RnoteCanvas>::default(),
             }
@@ -155,6 +166,8 @@ mod imp {
             self.scroller.add_controller(&self.canvas_alt_drag_gesture);
             self.scroller
                 .add_controller(&self.canvas_alt_shift_drag_gesture);
+            self.action_pad
+                .add_controller(&self.actionpad_longpress_gesture);
         }
 
         fn dispose(&self) {
@@ -241,6 +254,10 @@ impl RnoteCanvasWrapper {
         );
     }
 
+    pub(crate) fn toast_overlay(&self) -> adw::ToastOverlay {
+        self.imp().toast_overlay.get()
+    }
+
     pub(crate) fn quickactions_box(&self) -> gtk4::Box {
         self.imp().quickactions_box.get()
     }
@@ -257,9 +274,10 @@ impl RnoteCanvasWrapper {
         self.imp().redo_button.get()
     }
 
-    pub(crate) fn toast_overlay(&self) -> adw::ToastOverlay {
-        self.imp().toast_overlay.get()
+    pub(crate) fn action_pad(&self) -> Button {
+        self.imp().action_pad.get()
     }
+
     pub(crate) fn progressbar(&self) -> ProgressBar {
         self.imp().progressbar.get()
     }
@@ -528,6 +546,16 @@ impl RnoteCanvasWrapper {
                     prev_offset.set(new_offset);
             }));
         }
+
+        // Action pad long press
+        self.imp().actionpad_longpress_gesture.connect_pressed(
+            clone!(@weak appwindow => move |_actionpad_longpress_gesture, _, _| {
+                log::debug!("action pad activated with long press.");
+
+                let widget_flags = appwindow.canvas().engine().borrow_mut().handle_pen_pressed_shortcut_key(ShortcutKey::ActionPad);
+                appwindow.handle_widget_flags(widget_flags);
+            }),
+        );
     }
 
     pub(crate) fn canvas_touch_drag_gesture_enable(&self, enable: bool) {
@@ -562,6 +590,19 @@ impl RnoteCanvasWrapper {
         } else {
             self.imp()
                 .canvas_zoom_gesture
+                .set_propagation_phase(PropagationPhase::None);
+        }
+    }
+
+    #[allow(unused)]
+    pub(crate) fn actionpad_longpress_gesture_enable(&self, enable: bool) {
+        if enable {
+            self.imp()
+                .actionpad_longpress_gesture
+                .set_propagation_phase(PropagationPhase::Capture);
+        } else {
+            self.imp()
+                .actionpad_longpress_gesture
                 .set_propagation_phase(PropagationPhase::None);
         }
     }

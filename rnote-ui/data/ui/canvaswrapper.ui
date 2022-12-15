@@ -26,6 +26,22 @@
           </object>
         </child>
         <child type="overlay">
+          <object class="GtkButton" id="action_pad">
+            <property name="halign">end</property>
+            <property name="valign">end</property>
+            <property name="margin-start">24</property>
+            <property name="margin-end">24</property>
+            <property name="margin-bottom">24</property>
+            <property name="width-request">320</property>
+            <property name="height-request">180</property>
+            <property name="focusable">false</property>
+            <property name="sensitive">true</property>
+            <style>
+              <class name="action_pad"/>
+            </style>
+          </object>
+        </child>
+        <child type="overlay">
           <object class="GtkBox" id="quickactions_box">
             <property name="halign">start</property>
             <property name="valign">start</property>

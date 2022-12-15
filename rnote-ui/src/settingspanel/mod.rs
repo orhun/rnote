@@ -91,6 +91,8 @@ mod imp {
         pub(crate) penshortcut_stylus_button_secondary_row: TemplateChild<PenShortcutRow>,
         #[template_child]
         pub(crate) penshortcut_mouse_button_secondary_row: TemplateChild<PenShortcutRow>,
+        #[template_child]
+        pub(crate) penshortcut_actionpad_row: TemplateChild<PenShortcutRow>,
     }
 
     #[glib::object_subclass]
@@ -518,6 +520,9 @@ impl SettingsPanel {
                     imp.penshortcut_mouse_button_secondary_row
                         .set_action(action);
                 }
+                ShortcutKey::ActionPad => {
+                    imp.penshortcut_actionpad_row.set_action(action);
+                }
                 _ => {}
             });
     }
@@ -530,6 +535,7 @@ impl SettingsPanel {
             imp.penshortcut_stylus_button_secondary_row.get();
         let penshortcut_mouse_button_secondary_row =
             imp.penshortcut_mouse_button_secondary_row.get();
+        let penshortcut_actionpad_row = imp.penshortcut_actionpad_row.get();
 
         // autosave enable switch
         imp.general_autosave_enable_switch
@@ -721,6 +727,14 @@ impl SettingsPanel {
         imp.penshortcut_mouse_button_secondary_row.connect_local("action-changed", false, clone!(@weak penshortcut_mouse_button_secondary_row, @weak appwindow => @default-return None, move |_values| {
             let action = penshortcut_mouse_button_secondary_row.action();
             appwindow.canvas().engine().borrow_mut().penholder.register_new_shortcut(ShortcutKey::MouseSecondaryButton, action);
+            None
+        }));
+
+        imp.penshortcut_actionpad_row
+            .set_key(Some(ShortcutKey::ActionPad));
+        imp.penshortcut_actionpad_row.connect_local("action-changed", false, clone!(@weak penshortcut_actionpad_row, @weak appwindow => @default-return None, move |_values| {
+            let action = penshortcut_actionpad_row.action();
+            appwindow.canvas().engine().borrow_mut().penholder.register_new_shortcut(ShortcutKey::ActionPad, action);
             None
         }));
     }

@@ -527,6 +527,7 @@ mod imp {
                 inst.canvas_wrapper()
                     .quickactions_box()
                     .set_halign(Align::End);
+                inst.canvas_wrapper().action_pad().set_halign(Align::Start);
                 inst.mainheader()
                     .appmenu()
                     .righthanded_toggle()
@@ -628,6 +629,7 @@ mod imp {
                 inst.canvas_wrapper()
                     .quickactions_box()
                     .set_halign(Align::Start);
+                inst.canvas_wrapper().action_pad().set_halign(Align::End);
                 inst.mainheader()
                     .appmenu()
                     .lefthanded_toggle()
