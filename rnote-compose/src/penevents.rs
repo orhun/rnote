@@ -119,8 +119,8 @@ pub enum ShortcutKey {
     #[serde(rename = "mouse_secondary_button")]
     MouseSecondaryButton,
     /// when the user holds two fingers on the action pad in the overlay
-    #[serde(rename = "action_pad")]
-    ActionPad,
+    #[serde(rename = "action_pad_two_finger_long_press")]
+    ActionPadTwoFingerLongPress,
     /// Shift
     #[serde(rename = "keyboard_shift")]
     KeyboardShift,

@@ -520,7 +520,7 @@ impl SettingsPanel {
                     imp.penshortcut_mouse_button_secondary_row
                         .set_action(action);
                 }
-                ShortcutKey::ActionPad => {
+                ShortcutKey::ActionPadTwoFingerLongPress => {
                     imp.penshortcut_actionpad_row.set_action(action);
                 }
                 _ => {}
@@ -731,10 +731,10 @@ impl SettingsPanel {
         }));
 
         imp.penshortcut_actionpad_row
-            .set_key(Some(ShortcutKey::ActionPad));
+            .set_key(Some(ShortcutKey::ActionPadTwoFingerLongPress));
         imp.penshortcut_actionpad_row.connect_local("action-changed", false, clone!(@weak penshortcut_actionpad_row, @weak appwindow => @default-return None, move |_values| {
             let action = penshortcut_actionpad_row.action();
-            appwindow.canvas().engine().borrow_mut().penholder.register_new_shortcut(ShortcutKey::ActionPad, action);
+            appwindow.canvas().engine().borrow_mut().penholder.register_new_shortcut(ShortcutKey::ActionPadTwoFingerLongPress, action);
             None
         }));
     }

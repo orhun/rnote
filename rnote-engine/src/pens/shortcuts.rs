@@ -48,7 +48,7 @@ impl Default for Shortcuts {
             },
         );
         map.insert(
-            ShortcutKey::ActionPad,
+            ShortcutKey::ActionPadTwoFingerLongPress,
             ShortcutAction::ChangePenStyle {
                 style: PenStyle::Selector,
                 permanent: false,

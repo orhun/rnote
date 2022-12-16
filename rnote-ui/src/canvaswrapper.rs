@@ -1,7 +1,8 @@
 use once_cell::sync::Lazy;
-use rnote_compose::penhelpers::ShortcutKey;
+use rnote_compose::penevents::ShortcutKey;
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
+use std::time::Instant;
 
 use gtk4::{
     gdk, glib, glib::clone, prelude::*, subclass::prelude::*, Button, CompositeTemplate,
@@ -552,7 +553,7 @@ impl RnoteCanvasWrapper {
             clone!(@weak appwindow => move |_actionpad_longpress_gesture, _, _| {
                 log::debug!("action pad activated with long press.");
 
-                let widget_flags = appwindow.canvas().engine().borrow_mut().handle_pen_pressed_shortcut_key(ShortcutKey::ActionPad);
+                let widget_flags = appwindow.canvas().engine().borrow_mut().handle_pen_pressed_shortcut_key(ShortcutKey::ActionPadTwoFingerLongPress, Instant::now());
                 appwindow.handle_widget_flags(widget_flags);
             }),
         );

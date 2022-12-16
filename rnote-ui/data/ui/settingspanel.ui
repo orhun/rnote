@@ -412,9 +412,8 @@
                     </child>
                     <child>
                       <object class="PenShortcutRow" id="penshortcut_actionpad_row">
-                        <property name="title" translatable="yes">Action-pad action</property>
-                        <property name="subtitle" translatable="yes">Set the action for the action-pad.
-It is activated by a two-finger long-press with touch-input</property>
+                        <property name="title" translatable="yes">Action-pad two-finger long-press action</property>
+                        <property name="subtitle" translatable="yes">Set the action when pressing with two fingers on the action-pad</property>
                         <child type="prefix">
                           <object class="GtkImage">
                             <property name="icon_name">actionpad-longpress-symbolic</property>
