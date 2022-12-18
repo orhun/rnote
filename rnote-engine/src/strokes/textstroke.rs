@@ -10,6 +10,7 @@ use rnote_compose::shapes::ShapeBehaviour;
 use rnote_compose::transform::TransformBehaviour;
 use rnote_compose::{color, Color, Transform};
 use serde::{Deserialize, Serialize};
+use unicode_segmentation::{GraphemeCursor, UnicodeSegmentation};
 
 use crate::{render, Camera, DrawBehaviour};
 
@@ -641,6 +642,26 @@ impl TextStroke {
             self.text.len(),
             true,
         ))
+    }
+
+    /// Gets the word around the cursor (e.g. for selecting with double click)
+    pub fn get_word_selection_around_cursor(
+        &self,
+        cursor: &unicode_segmentation::GraphemeCursor,
+    ) -> Option<(
+        unicode_segmentation::GraphemeCursor,
+        unicode_segmentation::GraphemeCursor,
+    )> {
+        let word = self
+            .text
+            .split_word_bound_indices()
+            .find(|&(i, w)| (i + w.len()) > cursor.cur_cursor());
+
+        word.map(|(i, w)| {
+            let start = GraphemeCursor::new(i, self.text.len(), true);
+            let end = GraphemeCursor::new(i + w.len(), self.text.len(), true);
+            (start, end)
+        })
     }
 
     pub fn insert_text_after_cursor(

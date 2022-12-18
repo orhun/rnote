@@ -1,6 +1,7 @@
 use std::time::Instant;
 
-use rnote_compose::penevents::{KeyboardKey, ShortcutKey};
+use rnote_compose::gestures::GestureBehaviour;
+use rnote_compose::penevents::{KeyboardKey, PenEvent, ShortcutKey};
 use rnote_compose::penpath::Element;
 
 use crate::engine::EngineViewMut;
@@ -9,14 +10,14 @@ use crate::pens::PenBehaviour;
 use crate::strokes::{Stroke, TextStroke};
 use crate::{DrawOnDocBehaviour, StrokeStore, WidgetFlags};
 
-use super::{Typewriter, TypewriterState};
+use super::{new_double_click_gesture, Typewriter, TypewriterState};
 
 impl Typewriter {
     pub(super) fn handle_pen_event_down(
         &mut self,
         element: Element,
-        _shortcut_keys: Vec<ShortcutKey>,
-        _now: Instant,
+        shortcut_keys: Vec<ShortcutKey>,
+        now: Instant,
         engine_view: &mut EngineViewMut,
     ) -> (PenProgress, WidgetFlags) {
         let mut widget_flags = WidgetFlags::default();
@@ -57,6 +58,7 @@ impl Typewriter {
                             stroke_key,
                             cursor,
                             pen_down: true,
+                            double_click_gesture: new_double_click_gesture(),
                         };
                         refresh_state = true;
                     }
@@ -79,8 +81,17 @@ impl Typewriter {
                 stroke_key,
                 cursor,
                 pen_down,
+                double_click_gesture,
             } => {
                 let mut pen_progress = PenProgress::InProgress;
+
+                double_click_gesture.handle_event(
+                    PenEvent::Down {
+                        element,
+                        shortcut_keys,
+                    },
+                    now,
+                );
 
                 if let (Some(typewriter_bounds), Some(Stroke::TextStroke(textstroke))) = (
                     typewriter_bounds,
@@ -124,7 +135,24 @@ impl Typewriter {
                             if let Ok(new_cursor) =
                                 textstroke.get_cursor_for_global_coord(element.pos)
                             {
-                                if new_cursor.cur_cursor() != cursor.cur_cursor() && *pen_down {
+                                if double_click_gesture.recognized() {
+                                    if let Some((start, end)) =
+                                        textstroke.get_word_selection_around_cursor(&new_cursor)
+                                    {
+                                        // Reset the gesture
+                                        *double_click_gesture = new_double_click_gesture();
+
+                                        // switch to selecting the word
+                                        self.state = TypewriterState::Selecting {
+                                            stroke_key: *stroke_key,
+                                            cursor: start,
+                                            selection_cursor: end,
+                                            finished: false,
+                                        };
+                                    }
+                                } else if new_cursor.cur_cursor() != cursor.cur_cursor()
+                                    && *pen_down
+                                {
                                     // switch to selecting
                                     self.state = TypewriterState::Selecting {
                                         stroke_key: *stroke_key,
@@ -185,6 +213,7 @@ impl Typewriter {
                                         stroke_key: *stroke_key,
                                         cursor: new_cursor,
                                         pen_down: false,
+                                        double_click_gesture: new_double_click_gesture(),
                                     };
                                 }
                             } else {
@@ -277,9 +306,9 @@ impl Typewriter {
 
     pub(super) fn handle_pen_event_up(
         &mut self,
-        _element: Element,
-        _shortcut_keys: Vec<ShortcutKey>,
-        _now: Instant,
+        element: Element,
+        shortcut_keys: Vec<ShortcutKey>,
+        now: Instant,
         engine_view: &mut EngineViewMut,
     ) -> (PenProgress, WidgetFlags) {
         let mut widget_flags = WidgetFlags::default();
@@ -287,7 +316,19 @@ impl Typewriter {
         let pen_progress = match &mut self.state {
             TypewriterState::Idle => PenProgress::Idle,
             TypewriterState::Start(_) => PenProgress::InProgress,
-            TypewriterState::Modifying { pen_down, .. } => {
+            TypewriterState::Modifying {
+                pen_down,
+                double_click_gesture,
+                ..
+            } => {
+                double_click_gesture.handle_event(
+                    PenEvent::Up {
+                        element,
+                        shortcut_keys,
+                    },
+                    now,
+                );
+
                 *pen_down = false;
                 PenProgress::InProgress
             }
@@ -315,6 +356,7 @@ impl Typewriter {
                     stroke_key: *stroke_key,
                     cursor: cursor.clone(),
                     pen_down: false,
+                    double_click_gesture: new_double_click_gesture(),
                 };
 
                 engine_view
@@ -343,6 +385,7 @@ impl Typewriter {
                     stroke_key: *stroke_key,
                     cursor: cursor.clone(),
                     pen_down: false,
+                    double_click_gesture: new_double_click_gesture(),
                 };
 
                 engine_view
@@ -362,9 +405,9 @@ impl Typewriter {
 
     pub(super) fn handle_pen_event_proximity(
         &mut self,
-        _element: Element,
-        _shortcut_keys: Vec<ShortcutKey>,
-        _now: Instant,
+        element: Element,
+        shortcut_keys: Vec<ShortcutKey>,
+        now: Instant,
         _engine_view: &mut EngineViewMut,
     ) -> (PenProgress, WidgetFlags) {
         let widget_flags = WidgetFlags::default();
@@ -372,7 +415,19 @@ impl Typewriter {
         let pen_progress = match &mut self.state {
             TypewriterState::Idle => PenProgress::Idle,
             TypewriterState::Start(_) => PenProgress::InProgress,
-            TypewriterState::Modifying { pen_down, .. } => {
+            TypewriterState::Modifying {
+                pen_down,
+                double_click_gesture,
+                ..
+            } => {
+                double_click_gesture.handle_event(
+                    PenEvent::Proximity {
+                        element,
+                        shortcut_keys,
+                    },
+                    now,
+                );
+
                 *pen_down = false;
                 PenProgress::InProgress
             }
@@ -388,7 +443,7 @@ impl Typewriter {
         &mut self,
         keyboard_key: KeyboardKey,
         shortcut_keys: Vec<ShortcutKey>,
-        _now: Instant,
+        now: Instant,
         engine_view: &mut EngineViewMut,
     ) -> (PenProgress, WidgetFlags) {
         let mut widget_flags = WidgetFlags::default();
@@ -434,6 +489,7 @@ impl Typewriter {
                             stroke_key,
                             cursor,
                             pen_down: false,
+                            double_click_gesture: new_double_click_gesture(),
                         };
                     }
                     _ => {}
@@ -447,7 +503,16 @@ impl Typewriter {
                 stroke_key,
                 cursor,
                 pen_down,
+                double_click_gesture,
             } => {
+                double_click_gesture.handle_event(
+                    PenEvent::KeyPressed {
+                        keyboard_key,
+                        shortcut_keys: shortcut_keys.clone(),
+                    },
+                    now,
+                );
+
                 //log::debug!("key: {:?}", keyboard_key);
                 widget_flags.merge(engine_view.store.record(Instant::now()));
                 Self::start_audio(Some(keyboard_key), engine_view.audioplayer);
@@ -725,6 +790,7 @@ impl Typewriter {
                             stroke_key: *stroke_key,
                             cursor: cursor.clone(),
                             pen_down: false,
+                            double_click_gesture: new_double_click_gesture(),
                         };
                     }
                 }
@@ -743,7 +809,7 @@ impl Typewriter {
     pub(super) fn handle_pen_event_text(
         &mut self,
         text: String,
-        _now: Instant,
+        now: Instant,
         engine_view: &mut EngineViewMut,
     ) -> (PenProgress, WidgetFlags) {
         let mut widget_flags = WidgetFlags::default();
@@ -783,6 +849,7 @@ impl Typewriter {
                     stroke_key,
                     cursor,
                     pen_down: false,
+                    double_click_gesture: new_double_click_gesture(),
                 };
 
                 PenProgress::InProgress
@@ -791,7 +858,10 @@ impl Typewriter {
                 stroke_key,
                 cursor,
                 pen_down,
+                double_click_gesture,
             } => {
+                double_click_gesture.handle_event(PenEvent::Text { text: text.clone() }, now);
+
                 // Only record between words
                 if text.contains(' ') {
                     widget_flags.merge(engine_view.store.record(Instant::now()));
@@ -872,7 +942,7 @@ impl Typewriter {
 
     pub(super) fn handle_pen_event_cancel(
         &mut self,
-        _now: Instant,
+        now: Instant,
         _engine_view: &mut EngineViewMut,
     ) -> (PenProgress, WidgetFlags) {
         let mut widget_flags = WidgetFlags::default();
@@ -886,7 +956,12 @@ impl Typewriter {
 
                 PenProgress::Finished
             }
-            TypewriterState::Modifying { .. } => {
+            TypewriterState::Modifying {
+                double_click_gesture,
+                ..
+            } => {
+                double_click_gesture.handle_event(PenEvent::Cancel, now);
+
                 self.state = TypewriterState::Idle;
 
                 widget_flags.redraw = true;

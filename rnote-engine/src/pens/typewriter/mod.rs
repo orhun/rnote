@@ -1,11 +1,12 @@
 mod penevents;
 
 use std::ops::Range;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use once_cell::sync::Lazy;
 use p2d::bounding_volume::{Aabb, BoundingVolume};
 use piet::RenderContext;
+use rnote_compose::gestures::GestureDoubleClick;
 use rnote_compose::helpers::{AabbHelpers, Vector2Helpers};
 use rnote_compose::penevents::{KeyboardKey, PenEvent, PenState};
 use rnote_compose::shapes::ShapeBehaviour;
@@ -30,6 +31,7 @@ pub enum TypewriterState {
         stroke_key: StrokeKey,
         cursor: unicode_segmentation::GraphemeCursor,
         pen_down: bool,
+        double_click_gesture: GestureDoubleClick,
     },
     Selecting {
         stroke_key: StrokeKey,
@@ -423,7 +425,6 @@ impl PenBehaviour for Typewriter {
                    event
                );
         */
-
         let (pen_progress, widget_flags) = match event {
             PenEvent::Down {
                 element,
@@ -553,6 +554,7 @@ impl PenBehaviour for Typewriter {
                         stroke_key: *stroke_key,
                         cursor: cursor.clone(),
                         pen_down: false,
+                        double_click_gesture: new_double_click_gesture(),
                     };
 
                     Ok((
@@ -725,6 +727,7 @@ impl Typewriter {
                     stroke_key,
                     cursor,
                     pen_down: false,
+                    double_click_gesture: new_double_click_gesture(),
                 };
 
                 widget_flags.redraw = true;
@@ -762,6 +765,7 @@ impl Typewriter {
                     stroke_key,
                     cursor,
                     pen_down: false,
+                    double_click_gesture: new_double_click_gesture(),
                 };
 
                 widget_flags.redraw = true;
@@ -823,6 +827,7 @@ impl Typewriter {
                         stroke_key: *stroke_key,
                         cursor: cursor.clone(),
                         pen_down: false,
+                        double_click_gesture: new_double_click_gesture(),
                     };
 
                     widget_flags.resize = true;
@@ -938,4 +943,8 @@ impl Typewriter {
 
         widget_flags
     }
+}
+
+fn new_double_click_gesture() -> GestureDoubleClick {
+    GestureDoubleClick::default().with_timeout(Duration::from_millis(400))
 }

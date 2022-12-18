@@ -8,6 +8,8 @@
 pub mod builders;
 /// colors
 pub mod color;
+/// module for gestures
+pub mod gestures;
 /// module for helper traits that extend foreign types
 pub mod helpers;
 /// module for pen helpers
